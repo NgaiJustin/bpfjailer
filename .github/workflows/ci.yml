@@ -1,0 +1,36 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  client:
+    name: bpfjclient without libbpf or clang
+    runs-on: ubuntu-24.04
+    container: ubuntu:24.04
+    steps:
+      - name: Install a C++ toolchain and protobuf-lite
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get -o Acquire::Retries=3 update
+          apt-get -o Acquire::Retries=3 install -y --no-install-recommends g++ make pkg-config protobuf-compiler libprotobuf-dev
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: make client
+        run: make client
